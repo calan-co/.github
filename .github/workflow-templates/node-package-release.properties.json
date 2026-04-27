@@ -1,0 +1,14 @@
+{
+  "name": "Reusable Node Package Release",
+  "description": "Thin caller workflow for the shared Node package release pipeline.",
+  "iconName": "package",
+  "categories": [
+    "JavaScript",
+    "TypeScript",
+    "Automation"
+  ],
+  "filePatterns": [
+    "package.json$",
+    "pnpm-lock.yaml$"
+  ]
+}
