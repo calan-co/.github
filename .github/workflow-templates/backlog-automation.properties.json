@@ -1,0 +1,6 @@
+{
+  "name": "Backlog Automation",
+  "description": "Automates doc-vader backlog ingestion from pull request and CI events, with a manual sweep for merged PRs.",
+  "iconName": "octicon-tasklist",
+  "categories": ["Automation"]
+}
