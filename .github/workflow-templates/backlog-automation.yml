@@ -4,7 +4,7 @@ name: Backlog Automation
 # Reference implementation: https://github.com/calan-co/doc-vader/blob/main/.github/workflows/backlog-automation.yml
 #
 # To sync updates from the reference, compare this file's content and re-copy
-# any changes to the reusable sub-workflow `uses:` refs or trigger conditions.
+# any changes to the reusable sub-workflow \`uses:\` refs or trigger conditions.
 #
 # Prerequisites:
 #   1. Create .doc-vader/backlog-consumer.json (see docs at https://github.com/calan-co/doc-vader).
@@ -12,6 +12,9 @@ name: Backlog Automation
 #   3. For optional app-auth mode, configure DOC_VADER_APP_ID (repository variable)
 #      and DOC_VADER_PRIVATE_KEY (repository secret).
 #   4. For package access outside calan-co org, configure PACKAGES_READ_TOKEN (repository secret).
+#      - If using PACKAGES_READ_TOKEN, ensure it has \`read:packages\` scope.
+#      - If not provided, the workflow falls back to \`secrets.GITHUB_TOKEN\`, which only works
+#        for packages within the same repository or organization depending on visibility settings.
 
 on:
   schedule:
@@ -21,10 +24,10 @@ on:
       dry_run:
         description: 'Preview eligible updates without writing changes'
         required: false
-        default: false
+        default: true
         type: boolean
   pull_request:
-    types: [opened, edited, reopened, synchronize, closed]
+    types: [closed]
     branches:
       - main
       - staging
@@ -42,14 +45,18 @@ jobs:
     name: Ingest Pull Request Event
     if: >
       github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       vars.BACKLOG_AUTOMATION_ENABLED == 'true'
     uses: calan-co/doc-vader/.github/workflows/backlog-ingest-pull-request.yml@v1
     with:
       consumer-config: .doc-vader/backlog-consumer.json
       doc-vader-version: next
+      app-id: ${{ vars.DOC_VADER_APP_ID }}
     secrets:
       packages-read-token: ${{ secrets.PACKAGES_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      app-private-key: ${{ secrets.DOC_VADER_PRIVATE_KEY }}
 
   ingest-workflow-run:
     name: Ingest Workflow Run Event
@@ -62,8 +69,10 @@ jobs:
     with:
       consumer-config: .doc-vader/backlog-consumer.json
       doc-vader-version: next
+      app-id: ${{ vars.DOC_VADER_APP_ID }}
     secrets:
       packages-read-token: ${{ secrets.PACKAGES_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      app-private-key: ${{ secrets.DOC_VADER_PRIVATE_KEY }}
 
   sweep:
     name: Sweep Eligible Work Items
@@ -89,7 +98,7 @@ jobs:
           (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
         )
       )
-    uses: calan-co/doc-vader/.github/workflows/backlog-sweep.yml@2f4edec5b98adb087be6024221bbb50c1be8ed4b # v1
+    uses: calan-co/doc-vader/.github/workflows/backlog-sweep.yml@v1
     with:
       dry-run: ${{ inputs.dry_run || false }}
       consumer-config: .doc-vader/backlog-consumer.json
